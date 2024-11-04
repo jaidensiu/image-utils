@@ -2,4 +2,4 @@
 
 ![gopher](png/gopher_work.png)
 
-I wanted to modify some of my images and graphics quickly for free.
+I wanted to modify my images and graphics quickly and for free.
