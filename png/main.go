@@ -83,7 +83,7 @@ func makeBackgroundTransparent(inputPath, outputPath string) error {
 
 	// Define the background color (white in this case) and tolerance
 	bgColor := color.RGBA{255, 255, 255, 255}
-	tolerance := uint8(48) // Adjust the tolerance as needed
+	tolerance := uint8(84) // Adjust the tolerance as needed
 
 	// Process each row of pixels
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
