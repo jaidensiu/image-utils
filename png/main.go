@@ -83,7 +83,7 @@ func makeBackgroundTransparent(inputPath, outputPath string) error {
 
 	// Define the background color (white in this case) and tolerance
 	bgColor := color.RGBA{255, 255, 255, 255}
-	tolerance := uint8(84) // Adjust the tolerance as needed
+	tolerance := uint8(89) // Adjust the tolerance as needed
 
 	// Process each row of pixels
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -137,6 +137,8 @@ func withinTolerance(value, target, tolerance uint8) bool {
 }
 
 func main() {
+	/* SECTION: add margins */
+
 	// if len(os.Args) < 4 {
 	// 	fmt.Println("Usage: go run main.go <inputFile> <outputFile> <margin>")
 	// 	return
@@ -149,6 +151,8 @@ func main() {
 	// if err := addMarginsToPNG(inputFile, outputFile, margin); err != nil {
 	// 	fmt.Printf("Error: %v\n", err)
 	// }
+
+	/* SECTION: make background transparent */
 
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
