@@ -64,17 +64,101 @@ func parseDimension(dim string) int {
 	return value
 }
 
+func makeBackgroundTransparent(inputPath, outputPath string) error {
+	// Open the input image file
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Decode the image
+	img, err := png.Decode(file)
+	if err != nil {
+		return err
+	}
+
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+
+	// Define the background color (white in this case) and tolerance
+	bgColor := color.RGBA{255, 255, 255, 255}
+	tolerance := uint8(48) // Adjust the tolerance as needed
+
+	// Process each row of pixels
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		firstNonWhite := -1
+		lastNonWhite := -1
+
+		// Identify the first and last non-white pixels in the row
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			c := img.At(x, y)
+			r, g, b, a := c.RGBA()
+
+			if !withinTolerance(uint8(r>>8), bgColor.R, tolerance) ||
+				!withinTolerance(uint8(g>>8), bgColor.G, tolerance) ||
+				!withinTolerance(uint8(b>>8), bgColor.B, tolerance) ||
+				!withinTolerance(uint8(a>>8), bgColor.A, tolerance) {
+				if firstNonWhite == -1 {
+					firstNonWhite = x
+				}
+				lastNonWhite = x
+			}
+		}
+
+		// Update the row based on the identified bounds
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			if x < firstNonWhite || x > lastNonWhite {
+				newImg.Set(x, y, color.Transparent)
+			} else {
+				newImg.Set(x, y, img.At(x, y))
+			}
+		}
+	}
+
+	// Create the output image file
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	// Encode the new image to the output file
+	err = png.Encode(outFile, newImg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func withinTolerance(value, target, tolerance uint8) bool {
+	return value >= target-tolerance || value <= target+tolerance
+}
+
 func main() {
-	if len(os.Args) < 4 {
-		fmt.Println("Usage: go run main.go <inputFile> <outputFile> <margin>")
+	// if len(os.Args) < 4 {
+	// 	fmt.Println("Usage: go run main.go <inputFile> <outputFile> <margin>")
+	// 	return
+	// }
+
+	// inputFile := os.Args[1]
+	// outputFile := os.Args[2]
+	// margin := parseDimension(os.Args[3])
+
+	// if err := addMarginsToPNG(inputFile, outputFile, margin); err != nil {
+	// 	fmt.Printf("Error: %v\n", err)
+	// }
+
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
 		return
 	}
 
 	inputFile := os.Args[1]
 	outputFile := os.Args[2]
-	margin := parseDimension(os.Args[3])
 
-	if err := addMarginsToPNG(inputFile, outputFile, margin); err != nil {
+	if err := makeBackgroundTransparent(inputFile, outputFile); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
