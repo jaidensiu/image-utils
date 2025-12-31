@@ -188,6 +188,82 @@ func makeBackgroundWhite(inputPath, outputPath string) error {
 	return nil
 }
 
+func makeNonTransparentPixelColored(inputPath, outputPath string) error {
+	// Open the input image file
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Decode the image
+	img, err := png.Decode(file)
+	if err != nil {
+		return err
+	}
+
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+
+	// Define transparency threshold
+	alphaThreshold := uint8(50) // Pixels with alpha above this are considered non-transparent
+
+	// Kotlin gradient colors: purple to magenta/pink
+	purpleR, purpleG, purpleB := float64(91), float64(75), float64(138)
+	magentaR, magentaG, magentaB := float64(245), float64(50), float64(180)
+
+	width := float64(bounds.Dx())
+	height := float64(bounds.Dy())
+
+	// Process each pixel
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			c := img.At(x, y)
+			_, _, _, a := c.RGBA()
+			alpha := uint8(a >> 8)
+
+			// If the pixel is non-transparent, apply gradient
+			if alpha >= alphaThreshold {
+				// Calculate gradient position based on x and y (diagonal from bottom-left to top-right)
+				tx := float64(x-bounds.Min.X) / width
+				ty := 1.0 - (float64(y-bounds.Min.Y) / height) // Invert y so top is 1
+				t := (tx + ty) / 2.0                           // Average for diagonal effect
+
+				if t > 1 {
+					t = 1
+				}
+				if t < 0 {
+					t = 0
+				}
+
+				// Interpolate between purple and red
+				r := uint8(purpleR + (magentaR-purpleR)*t)
+				g := uint8(purpleG + (magentaG-purpleG)*t)
+				b := uint8(purpleB + (magentaB-purpleB)*t)
+
+				newImg.Set(x, y, color.RGBA{r, g, b, 255})
+			} else {
+				newImg.Set(x, y, c)
+			}
+		}
+	}
+
+	// Create the output image file
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	// Encode the new image to the output file
+	err = png.Encode(outFile, newImg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	// ===== SECTION: add margins =====
 
@@ -220,6 +296,20 @@ func main() {
 
 	// ===== SECTION: make background white =====
 
+	// if len(os.Args) < 3 {
+	// 	fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
+	// 	return
+	// }
+
+	// inputFile := os.Args[1]
+	// outputFile := os.Args[2]
+
+	// if err := makeBackgroundWhite(inputFile, outputFile); err != nil {
+	// 	fmt.Printf("Error: %v\n", err)
+	// }
+
+	// ===== SECTION: make non-transparent pixels colored =====
+
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
 		return
@@ -228,7 +318,7 @@ func main() {
 	inputFile := os.Args[1]
 	outputFile := os.Args[2]
 
-	if err := makeBackgroundWhite(inputFile, outputFile); err != nil {
+	if err := makeNonTransparentPixelColored(inputFile, outputFile); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
