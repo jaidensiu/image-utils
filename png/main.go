@@ -136,8 +136,60 @@ func withinTolerance(value, target, tolerance uint8) bool {
 	return value >= target-tolerance || value <= target+tolerance
 }
 
+func makeBackgroundWhite(inputPath, outputPath string) error {
+	// Open the input image file
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Decode the image
+	img, err := png.Decode(file)
+	if err != nil {
+		return err
+	}
+
+	bounds := img.Bounds()
+	newImg := image.NewRGBA(bounds)
+
+	// Define transparency tolerance
+	alphaTolerance := uint8(50) // Pixels with alpha below this are considered transparent
+
+	// Process each pixel
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			c := img.At(x, y)
+			_, _, _, a := c.RGBA()
+			alpha := uint8(a >> 8)
+
+			// If the pixel is transparent, make it white
+			if alpha < alphaTolerance {
+				newImg.Set(x, y, color.RGBA{255, 255, 255, 255})
+			} else {
+				newImg.Set(x, y, c)
+			}
+		}
+	}
+
+	// Create the output image file
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	// Encode the new image to the output file
+	err = png.Encode(outFile, newImg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
-	/* SECTION: add margins */
+	// ===== SECTION: add margins =====
 
 	// if len(os.Args) < 4 {
 	// 	fmt.Println("Usage: go run main.go <inputFile> <outputFile> <margin>")
@@ -152,7 +204,21 @@ func main() {
 	// 	fmt.Printf("Error: %v\n", err)
 	// }
 
-	/* SECTION: make background transparent */
+	// ===== SECTION: make background transparent =====
+
+	// if len(os.Args) < 3 {
+	// 	fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
+	// 	return
+	// }
+
+	// inputFile := os.Args[1]
+	// outputFile := os.Args[2]
+
+	// if err := makeBackgroundTransparent(inputFile, outputFile); err != nil {
+	// 	fmt.Printf("Error: %v\n", err)
+	// }
+
+	// ===== SECTION: make background white =====
 
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: go run main.go <inputFile> <outputFile>")
@@ -162,7 +228,7 @@ func main() {
 	inputFile := os.Args[1]
 	outputFile := os.Args[2]
 
-	if err := makeBackgroundTransparent(inputFile, outputFile); err != nil {
+	if err := makeBackgroundWhite(inputFile, outputFile); err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
 }
